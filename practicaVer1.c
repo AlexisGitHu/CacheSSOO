@@ -12,6 +12,7 @@
 // 9.- Leeremos las direcciones de memoria una a una (hasta un '\n' o un feof) del fichero accesos_memoria.txt
 // 10.- Calculamos linea, palabra etc....
 // 11.- Comparamos las distintas etiquetas
+// 12.- Actuamos en base a la comparacion si es false. Sin cargar los datos porque tenemos que pensar si queremos almacenar del revés los datos o imprimirlos al reves
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -169,6 +170,7 @@ void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 	direccion = '\0';
 	
 	int tiempoGlobal = 0;
+	int numFallos = 0;
 	int contadorAccesosALaCache = 0;
 	int comparacion = FALSE;
 	T_DIRECCION_SEPARACION direccionRepartida;
@@ -184,6 +186,19 @@ void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 		direccionRepartida = calcularElRestoDeCamposDeDireccion(aux);
 		
 		comparacion = compararEtiquetaConCache(CACHEsym[direccionRepartida.linea].ETQ, direccionRepartida.etiqueta);
+		
+		if (comparacion == FALSE)
+		{
+			numFallos++;
+			
+			printf("T: %d, Fallo de CACHE %d, ADDR %04X ETQ %X linea %02X palabra %02X bloque %02X\n", tiempoGlobal, numFallos, direccionRepartida.direccion, direccionRepartida.etiqueta, direccionRepartida.linea, direccionRepartida.palabra, direccionRepartida.bloque);
+
+			tiempoGlobal += 10;
+
+			//printf("Cargando el bloque %02X en la linea %02X\n", direccionRepartida.bloque, direccionRepartida.linea);
+			
+			CACHEsym[direccionRepartida.linea].ETQ = direccionRepartida.etiqueta; //Llamar a una funcion para q cada indice de dato corresponda
+		}
 	}
 }
 
