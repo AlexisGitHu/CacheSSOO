@@ -13,7 +13,7 @@
 // 10.- Calculamos linea, palabra etc....
 // 11.- Comparamos las distintas etiquetas
 // 12.- Actuamos en base a la comparacion si es false. Sin cargar los datos porque tenemos que pensar si queremos almacenar del revés los datos o imprimirlos al reves
-
+// 13.- Mejor imprimir los datos al revés que guardarlos al revés, porque en el caso de que necesitemos acceder a esos datos, estarían al revés. Asi que por simplicidad guardaremos los datos del derecho y los imprimiremos del revés
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -164,6 +164,35 @@ int compararEtiquetaConCache(unsigned int ETQ, unsigned int etiqueta)
 	return comparacion;
 }
 
+T_LINEA_CACHE cargarLosDatos(char* RAM, T_LINEA_CACHE CACHEsym, unsigned int bloque)
+{
+	char aux = '\0';
+	int indiceBucle = 0;
+
+	for (indiceBucle = 0; indiceBucle < 8; indiceBucle++)
+	{
+		CACHEsym.Datos[indiceBucle] = RAM[8 * bloque + indiceBucle];
+	}
+
+	return CACHEsym;
+}
+
+void imprimirEtqYDatos(T_LINEA_CACHE* CACHEsym)
+{
+	int i = 0;
+	int indiceBucle = 0;
+
+	for (indiceBucle = 0; indiceBucle < 4; indiceBucle++)
+	{
+		printf("ETQ:%X\tDatos ", CACHEsym[indiceBucle].ETQ);
+		for (i = 7; i >= 0; i--)
+		{
+			printf("%02X ", CACHEsym[indiceBucle].Datos[i]);
+		}
+		printf("\n");
+	}
+}
+
 void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 {
 	char* direccion = (char*)malloc(sizeof(char)*5);
@@ -195,10 +224,16 @@ void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 
 			tiempoGlobal += 10;
 
-			//printf("Cargando el bloque %02X en la linea %02X\n", direccionRepartida.bloque, direccionRepartida.linea);
-			
+			printf("Cargando el bloque %02X en la linea %02X\n", direccionRepartida.bloque, direccionRepartida.linea);
+
+			CACHEsym[direccionRepartida.linea] = cargarLosDatos(RAM, CACHEsym[direccionRepartida.linea], direccionRepartida.bloque);
+
 			CACHEsym[direccionRepartida.linea].ETQ = direccionRepartida.etiqueta; //Llamar a una funcion para q cada indice de dato corresponda
 		}
+
+		printf("T: %d, Acierto de CACHE, ADDR %04X ETQ %X linea %02X palabra %02X DATO %02X\n", tiempoGlobal, direccionRepartida.direccion, direccionRepartida.etiqueta, direccionRepartida.linea, direccionRepartida.palabra, CACHEsym[direccionRepartida.linea].Datos[direccionRepartida.palabra]);
+
+		imprimirEtqYDatos(CACHEsym);
 	}
 }
 
