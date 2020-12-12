@@ -16,13 +16,14 @@
 // 13.- Mejor imprimir los datos al revés que guardarlos al revés, porque en el caso de que necesitemos acceder a esos datos, estarían al revés. Asi que por simplicidad guardaremos los datos del derecho y los imprimiremos del revés
 // 14.- Ahora nos falta tratar con el texto leído y la simplicidad del programa 
 // Con respecto a la simplicidad, si usamos la librería <string.h> y usamos strtol (su tercer argumento es la base de la que pasamos un string a un long (y como queremos un unsigned int no hay problema, pero si que lo habría si fuesemos de unsigned int a long))
-//Además como hemos incluido <string.h> podemos hacer uso de strcat para el texto. Sin embargo para hacer strcat debe ser un string, pero estaríamos evaluando un char en vez de string (RAM[i] --> char), pero si hacemos strncat y hacemos: strncat(texto,&RAM[i], 1) sería correcto porque &RAM[i] lo evaluaría como String y luego solo copia 1 caracter. Para poder referenciar al dato en concreto que queremos deberemos hacer: &RAM[bloque*8(datos por bloque) + palabra]
+//Además como hemos incluido <string.h> podemos hacer uso de strcat para el texto. Sin embargo para hacer strcat debe ser un string, pero estaríamos evaluando un char en vez de string (RAM[i] --> char), pero si hacemos strncat y hacemos: strncat(texto,&RAM[i], 1) sería correcto porque &RAM[i] lo evaluaría como String y luego solo copia 1 caracter 
 // 15.- Hacemos el sleep también
+// 16.- Imprimimos el texto leído tras todos los aciertos. Además de imprimir el mensaje final
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// #include <unistd.h>
+#include <unistd.h>
 //Macros que actuan como booleanos
 #define TRUE 1
 #define FALSE 0
@@ -101,20 +102,20 @@ int compararEtiquetaConCache(unsigned int ETQ, unsigned int etiqueta)
 	return comparacion;
 }
 
-T_LINEA_CACHE cargarLosDatos(char* RAM, T_LINEA_CACHE CACHEsym, unsigned int bloque)
+T_LINEA_CACHE cargarLosDatos(char *RAM, T_LINEA_CACHE CACHEsym, unsigned int bloque)
 {
 	char aux = '\0';
 	int indiceBucle = 0;
 	
 	for(indiceBucle = 0; indiceBucle < 8; indiceBucle++)
 	{
-		CACHEsym.Datos[indiceBucle] = RAM[8 * bloque + indiceBucle];
+		CACHEsym.Datos[indiceBucle] = RAM[8*bloque + indiceBucle];
 	}
 	
 	return CACHEsym;
 }
 
-void imprimirEtqYDatos(T_LINEA_CACHE* CACHEsym)
+void imprimirEtqYDatos(T_LINEA_CACHE *CACHEsym)
 {
 	int i = 0;
 	int indiceBucle = 0;
@@ -128,6 +129,24 @@ void imprimirEtqYDatos(T_LINEA_CACHE* CACHEsym)
 		}
 		printf("\n");
 	}
+}
+
+void mostrarMensajeFinal(int tiempoGlobal, int numFallos, int numAccesosALaCache, char* texto)
+{
+	double mediaTiempoAcceso = 0;
+
+	if(numAccesosALaCache == 0)
+	{
+		printf("El numero de accesos a la cache han sido 0...\n");
+	}
+	else
+	{
+		mediaTiempoAcceso = (double)tiempoGlobal/(double)numAccesosALaCache; //Hacemos el casting porque si no, la division de int/int = int
+	}
+	
+	printf("\n-----------------------------\n");
+	printf("Tiempo global: %d\nNumero de accesos a la cache: %d\nNumero de accesos fallidos a la cache: %d\nTiempo medio de acceso a la cache: %f\nTexto: %s\n",tiempoGlobal, numAccesosALaCache, numFallos, mediaTiempoAcceso, texto);
+	printf("-----------------------------\n");
 }
 
 void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
@@ -180,6 +199,9 @@ void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 		
 		sleep(2);
 	}
+	free(direccion);
+	
+	mostrarMensajeFinal(tiempoGlobal, numFallos, contadorAccesosALaCache, texto);
 }
 
 int main(int argc, char* argv[])
