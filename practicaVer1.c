@@ -14,9 +14,15 @@
 // 11.- Comparamos las distintas etiquetas
 // 12.- Actuamos en base a la comparacion si es false. Sin cargar los datos porque tenemos que pensar si queremos almacenar del revés los datos o imprimirlos al reves
 // 13.- Mejor imprimir los datos al revés que guardarlos al revés, porque en el caso de que necesitemos acceder a esos datos, estarían al revés. Asi que por simplicidad guardaremos los datos del derecho y los imprimiremos del revés
+// 14.- Ahora nos falta tratar con el texto leído y la simplicidad del programa 
+// Con respecto a la simplicidad, si usamos la librería <string.h> y usamos strtol (su tercer argumento es la base de la que pasamos un string a un long (y como queremos un unsigned int no hay problema, pero si que lo habría si fuesemos de unsigned int a long))
+//Además como hemos incluido <string.h> podemos hacer uso de strcat para el texto. Sin embargo para hacer strcat debe ser un string, pero estaríamos evaluando un char en vez de string (RAM[i] --> char), pero si hacemos strncat y hacemos: strncat(texto,&RAM[i], 1) sería correcto porque &RAM[i] lo evaluaría como String y luego solo copia 1 caracter. Para poder referenciar al dato en concreto que queremos deberemos hacer: &RAM[bloque*8(datos por bloque) + palabra]
+// 15.- Hacemos el sleep también
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <string.h>
+// #include <unistd.h>
 //Macros que actuan como booleanos
 #define TRUE 1
 #define FALSE 0
@@ -83,75 +89,6 @@ char* leeLineaDeFichero(FILE* fichero)
 	return linea;
 }
 
-unsigned int traducir(char hexaChar)
-{
-	unsigned int traduccion = 0x0;
-	switch (hexaChar)
-	{
-		case '0':
-			break;
-		case '1':
-			traduccion += 1;
-			break;
-		case '2':
-			traduccion += 2;
-			break;
-		case '3':
-			traduccion += 3;
-			break;
-		case '4':
-			traduccion += 4;
-			break;
-		case '5':
-			traduccion += 5;
-			break;
-		case '6':
-			traduccion += 6;
-			break;
-		case '7':
-			traduccion += 7;
-			break;
-		case '8':
-			traduccion += 8;
-			break;
-		case '9':
-			traduccion += 9;
-			break;
-		case 'A':
-			traduccion += 10;
-			break;
-		case 'B':
-			traduccion += 11;
-			break;
-		case 'C':
-			traduccion += 12;
-			break;
-		case 'D':
-			traduccion += 13;
-			break;	
-		case 'E':
-			traduccion += 14;
-			break;
-		case 'F':
-			traduccion += 15;
-			break;
-	}
-	return traduccion;
-}
-
-unsigned int traducirDeHexaCharAHexa(char* direccion)
-{
-	int i = 0;
-	unsigned int traduccion = 0;
-	
-	for(i = 0; i < 4; i++)
-	{
-		traduccion += (traducir(direccion[i]))*(pow(16,3-i));
-	}
-	
-	return traduccion;
-}
-
 int compararEtiquetaConCache(unsigned int ETQ, unsigned int etiqueta)
 {
 	int comparacion = FALSE;
@@ -168,12 +105,12 @@ T_LINEA_CACHE cargarLosDatos(char* RAM, T_LINEA_CACHE CACHEsym, unsigned int blo
 {
 	char aux = '\0';
 	int indiceBucle = 0;
-
-	for (indiceBucle = 0; indiceBucle < 8; indiceBucle++)
+	
+	for(indiceBucle = 0; indiceBucle < 8; indiceBucle++)
 	{
 		CACHEsym.Datos[indiceBucle] = RAM[8 * bloque + indiceBucle];
 	}
-
+	
 	return CACHEsym;
 }
 
@@ -181,7 +118,7 @@ void imprimirEtqYDatos(T_LINEA_CACHE* CACHEsym)
 {
 	int i = 0;
 	int indiceBucle = 0;
-
+	
 	for (indiceBucle = 0; indiceBucle < 4; indiceBucle++)
 	{
 		printf("ETQ:%X\tDatos ", CACHEsym[indiceBucle].ETQ);
@@ -204,6 +141,7 @@ void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 	int comparacion = FALSE;
 	T_DIRECCION_SEPARACION direccionRepartida;
 	unsigned int aux = 0x0;
+	char texto[100];
 	
 	while (!feof(fichero2)) //Realizamos este bucle hasta que no sea end of file
 	{
@@ -211,7 +149,10 @@ void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 		contadorAccesosALaCache++;
 		direccion = leeLineaDeFichero(fichero2); //Leemos la direccion de memoria desde el fichero
 		
-		aux = traducirDeHexaCharAHexa(direccion); //Traducimos la direccion
+		aux = strtol(direccion,NULL,16); //Traducimos la direccion
+		
+		printf("\n");
+		
 		direccionRepartida = calcularElRestoDeCamposDeDireccion(aux);
 		
 		comparacion = compararEtiquetaConCache(CACHEsym[direccionRepartida.linea].ETQ, direccionRepartida.etiqueta);
@@ -225,15 +166,19 @@ void buclePrincipal(FILE* fichero2, T_LINEA_CACHE *CACHEsym, unsigned char* RAM)
 			tiempoGlobal += 10;
 
 			printf("Cargando el bloque %02X en la linea %02X\n", direccionRepartida.bloque, direccionRepartida.linea);
-
+			
 			CACHEsym[direccionRepartida.linea] = cargarLosDatos(RAM, CACHEsym[direccionRepartida.linea], direccionRepartida.bloque);
-
+			
 			CACHEsym[direccionRepartida.linea].ETQ = direccionRepartida.etiqueta; //Llamar a una funcion para q cada indice de dato corresponda
 		}
-
+		
 		printf("T: %d, Acierto de CACHE, ADDR %04X ETQ %X linea %02X palabra %02X DATO %02X\n", tiempoGlobal, direccionRepartida.direccion, direccionRepartida.etiqueta, direccionRepartida.linea, direccionRepartida.palabra, CACHEsym[direccionRepartida.linea].Datos[direccionRepartida.palabra]);
 
 		imprimirEtqYDatos(CACHEsym);
+		
+		strncat(texto, &RAM[direccionRepartida.bloque*8 +direccionRepartida.palabra],1);
+		
+		sleep(2);
 	}
 }
 
